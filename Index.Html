@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Farlem Lanches — O sabor original</title>
+
+<style>
+:root{
+  --bg:#0f1115;
+  --card:#191d24;
+  --gold:#ffc928;
+  --txt:#f7f7f7;
+  --muted:#b7bdc8;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:var(--bg);
+  color:var(--txt);
+}
+header{
+  padding:22px 16px;
+  text-align:center;
+  background:#090b0e;
+  border-bottom:3px solid var(--gold);
+}
+header h1{
+  margin:0;
+  color:var(--gold);
+  font-size:30px;
+}
+header p{margin:6px 0 0}
+main{
+  max-width:900px;
+  margin:auto;
+  padding:16px;
+}
+.hero{
+  background:#191d24;
+  padding:18px;
+  border-radius:18px;
+  margin-bottom:16px;
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:12px;
+}
+.card,.box{
+  background:var(--card);
+  border-radius:16px;
+  padding:14px;
+  border:1px solid #2a303a;
+}
+.box{margin-top:16px}
+.card h3{margin:4px 0 8px}
+.price{
+  color:var(--gold);
+  font-size:21px;
+  font-weight:bold;
+}
+button{
+  border:0;
+  border-radius:12px;
+  padding:11px 14px;
+  font-weight:bold;
+}
+.add{
+  background:var(--gold);
+  color:#111;
+  width:100%;
+  margin-top:10px;
+}
+input,select,textarea{
+  width:100%;
+  padding:11px;
+  margin:6px 0 10px;
+  border-radius:10px;
+  border:1px solid #3a414c;
+  background:#101319;
+  color:white;
+}
+.row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.cartline{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  padding:8px 0;
+  border-bottom:1px solid #303641;
+}
+.total{
+  font-size:20px;
+  font-weight:bold;
+  color:var(--gold);
+}
+.send{
+  width:100%;
+  background:#25D366;
+  color:#071b0e;
+  font-size:17px;
+  margin-top:12px;
+}
+.small{
+  font-size:13px;
+  color:var(--muted);
+}
+.remove{
+  background:#333;
+  color:#fff;
+  padding:5px 8px;
+}
+@media(max-width:550px){
+  .row{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>FARLEM LANCHES</h1>
+  <p>O sabor original desde 2017</p>
+</header>
+
+<main>
+
+<section class="hero">
+  <h2>Faça seu pedido 🍔🌭</h2>
+  <p>Escolha seus produtos e envie o pedido direto para nosso WhatsApp.</p>
+</section>
+
+<h2>Cardápio</h2>
+<div class="grid" id="menu"></div>
+
+<section class="box">
+  <h2>Seu pedido</h2>
+  <div id="cart">
+    <p class="small">Seu carrinho está vazio.</p>
+  </div>
+</section>
+
+<section class="box">
+<h2>Entrega e pagamento</h2>
+
+<label>Nome</label>
+<input id="name" placeholder="Seu nome">
+
+<div class="row">
+<div>
+<label>Recebimento</label>
+<select id="mode" onchange="update()">
+<option value="delivery">Entrega</option>
+<option value="pickup">Retirada no local</option>
+</select>
+</div>
+
+<div>
+<label>Pagamento</label>
+<select id="pay" onchange="update()">
+<option>PIX</option>
+<option>Dinheiro</option>
+<option>Cartão de débito</option>
+<option>Cartão de crédito</option>
+</select>
+</div>
+</div>
+
+<div id="deliveryFields">
+<label>Bairro</label>
+<select id="hood" onchange="update()"></select>
+
+<label>Endereço e referência</label>
+<textarea id="address"
+placeholder="Rua, número e ponto de referência"></textarea>
+</div>
+
+<label id="changeLabel">Troco (se precisar)</label>
+<input id="change" placeholder="Ex.: troco para R$ 50">
+
+<div id="summary"></div>
+
+<button class="send" onclick="sendOrder()">
+Enviar pedido pelo WhatsApp
+</button>
+
+<p class="small">
+No cartão de crédito é acrescentada automaticamente a taxa de 5%.
+</p>
+
+</section>
+</main>
+
+<script>
+const products=[
+ {name:"X-Salada",price:10,desc:"Clássico Farlem Lanches"},
+ {name:"Kikão Simples",price:6,desc:"Pão de hot dog, salsicha, molho e batata palha"},
+ {name:"Kikão Especial — Calabresa + Muçarela",price:12,desc:"Especial com calabresa e muçarela"},
+ {name:"Suco Natural 300 ml",price:5,desc:"Consulte os sabores disponíveis"},
+ {name:"Suco Natural 1 litro",price:15,desc:"Consulte os sabores disponíveis"},
+ {name:"Suco Natural 2 litros",price:28,desc:"Consulte os sabores disponíveis"},
+ {name:"Din-din",price:2,desc:"Coco, salada de frutas, goiaba ou cupuaçu"}
+];
+
+const fees={
+ "Aparecida":3,
+ "Biri-Biri":3,
+ "Centro":3,
+ "Correnteza":3,
+ "Duque de Ouro":4,
+ "Frazão":4,
+ "Lago Azul":4,
+ "Liberdade":3,
+ "Manacá":4,
+ "Monte Cristo":3,
+ "Morada do Sol":4,
+ "Nova Vitória":4,
+ "Novo Horizonte":4,
+ "São Francisco":2,
+ "São José":3,
+ "Terra Preta":3,
+ "União":3
+};
+
+let cart=[];
+
+const brl=n=>n.toLocaleString(
+ "pt-BR",
+ {style:"currency",currency:"BRL"}
+);
+
+function renderMenu(){
+ document.getElementById("menu").innerHTML=
+ products.map((p,i)=>`
+ <div class="card">
+   <h3>${p.name}</h3>
+   <p class="small">${p.desc}</p>
+   <div class="price">${brl(p.price)}</div>
+   <button class="add" onclick="add(${i})">
+   Adicionar
+   </button>
+ </div>`).join("");
+}
+
+function add(i){
+ let x=cart.find(x=>x.i===i);
+ if(x)x.q++;
+ else cart.push({i:i,q:1});
+ update();
+}
+
+function rem(i){
+ let x=cart.find(x=>x.i===i);
+ if(!x)return;
+ x.q--;
+ if(x.q<=0)cart=cart.filter(y=>y.i!==i);
+ update();
+}
+
+function calc(){
+ let sub=cart.reduce(
+   (s,x)=>s+products[x.i].price*x.q,0
+ );
+ let fee=
+   document.getElementById("mode").value==="delivery"
+   ?Number(document.getElementById("hood").value||0)
+   :0;
+
+ let base=sub+fee;
+
+ let credit=
+   document.getElementById("pay").value==="Cartão de crédito"
+   ?base*.05
+   :0;
+
+ return{
+   sub:sub,
+   fee:fee,
+   credit:credit,
+   total:base+credit
+ };
+}
+
+function update(){
+ const mode=document.getElementById("mode");
+ const pay=document.getElementById("pay");
+ const deliveryFields=document.getElementById("deliveryFields");
+ const change=document.getElementById("change");
+ const changeLabel=document.getElementById("changeLabel");
+
+ deliveryFields.style.display=
+   mode.value==="delivery"?"block":"none";
+
+ changeLabel.style.display=
+   pay.value==="Dinheiro"?"block":"none";
+
+ change.style.display=
+   pay.value==="Dinheiro"?"block":"none";
+
+ const cartEl=document.getElementById("cart");
+
+ cartEl.innerHTML=cart.length
+ ?cart.map(x=>`
+   <div class="cartline">
+     <span>${x.q}x ${products[x.i].name}</span>
+     <span>
+       ${brl(products[x.i].price*x.q)}
+       <button class="remove"
+       onclick="rem(${x.i})">−</button>
+     </span>
+   </div>
+ `).join("")
+ :'<p class="small">Seu carrinho está vazio.</p>';
+
+ let c=calc();
+
+ document.getElementById("summary").innerHTML=`
+ <p>
+ Produtos: ${brl(c.sub)}<br>
+ Entrega: ${brl(c.fee)}
+ ${c.credit
+ ?`<br>Taxa cartão (5%): ${brl(c.credit)}`
+ :""}
+ </p>
+ <div class="total">
+ Total: ${brl(c.total)}
+ </div>`;
+}
+
+function sendOrder(){
+ if(!cart.length){
+   alert("Adicione pelo menos um produto.");
+   return;
+ }
+
+ const name=document.getElementById("name");
+ const mode=document.getElementById("mode");
+ const pay=document.getElementById("pay");
+ const hood=document.getElementById("hood");
+ const address=document.getElementById("address");
+ const change=document.getElementById("change");
+
+ if(!name.value.trim()){
+   alert("Informe seu nome.");
+   return;
+ }
+
+ if(mode.value==="delivery"&&!address.value.trim()){
+   alert("Informe o endereço.");
+   return;
+ }
+
+ let c=calc();
+
+ let lines=cart.map(x=>
+ `• ${x.q}x ${products[x.i].name} — ${brl(products[x.i].price*x.q)}`
+ );
+
+ let msg=
+ `*NOVO PEDIDO — FARLEM LANCHES*
+
+Cliente: ${name.value.trim()}
+
+${lines.join("\n")}
+
+Produtos: ${brl(c.sub)}
+${mode.value==="delivery"
+ ?`Entrega: ${brl(c.fee)}
+Bairro: ${hood.options[hood.selectedIndex].text}
+Endereço: ${address.value.trim()}`
+ :"Retirada no local"}
+
+Pagamento: ${pay.value}
+${c.credit
+ ?`Taxa do cartão (5%): ${brl(c.credit)}`
+ :""}
+${pay.value==="Dinheiro"&&change.value
+ ?`Troco: ${change.value}`
+ :""}
+
+*TOTAL: ${brl(c.total)}*`;
+
+ window.open(
+   "https://wa.me/5592993698778?text="+
+   encodeURIComponent(msg),
+   "_blank"
+ );
+}
+
+document.getElementById("hood").innerHTML=
+ Object.entries(fees)
+ .map(([n,v])=>
+ `<option value="${v}">
+ ${n} — ${brl(v)}
+ </option>`
+ ).join("");
+
+renderMenu();
+update();
+</script>
+
+</body>
+</html>
